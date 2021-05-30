@@ -1,0 +1,2 @@
+need to install libssl-dev
+need to compile with -lcrypto
