@@ -1,27 +1,16 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <map>
 
 using namespace std;
 
-//0 then 1
-int step(int a){
-  if(a % 2 == 1) return -1;
-  int o = a/2;
-  if(o % 2 == 0) return -1;
-  return o/2;
+int next(int a){
+  return 4 * a + 2;
 }
 
 int main(){
-  for(int a = 1; a < 100; a++){
-    int x = a;
-    while(x > 0){
-      x = step(x);
-    }
-    if(x == 0) cout << a << endl;
-  }
+  int a = 2;
+  while(a <= 7 * 362) a = next(a);
+
+  cout << a - (7 * 362) << endl;
 
   return 0;
 }
