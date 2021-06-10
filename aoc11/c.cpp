@@ -2,12 +2,20 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
+#include <algorithm>
+#include <map>
 
 using namespace std;
 
 struct i{
   bool g = true;
-  string e;
+  char e;
+  i(){}
+  i(bool x, string q){
+    g = x;
+    e = q[3];
+  }
 };
 
 struct m{
@@ -48,12 +56,61 @@ const void operator+=(int& lhs, const m& rhs){
   lhs += rhs.u?1:-1;
 }
 
+const bool operator<(const i& a, const i& b){
+  if(a.e == b.e) return a.g;
+  return a.e < b.e;
+}
+
+const bool operator==(const i&a, const i& b){
+  return a.e == b.e && a.g == b.g;
+}
+
+const bool operator<(const pair<int,int>& a, const pair<int,int>& b){
+  if(a.first == b.first) return a.second < b.second;
+  return a.first < b.first;
+}
+
+const bool operator==(const pair<int,int>& a, const pair<int,int>& b){
+  return (a.first == b.first) && (a.second == b.second);
+}
+
+const bool operator<(const vector<vector<i>>& a, const vector<vector<i>>& b){
+  map<char,pair<int,int>> ah;
+  map<char,pair<int,int>> bah;
+  for(int q = 0; q < a.size(); q++){
+    for(i h : a[q]){
+      if(h.g) ah[h.e].second = q;
+      if(!h.g) ah[h.e].first = q;
+    }
+  }
+  for(int q = 0; q < b.size(); q++){
+    for(i h : b[q]){
+      if(h.g) bah[h.e].second = q;
+      if(!h.g) bah[h.e].first = q;
+    }
+  }
+  vector<pair<int,int>> aht;
+  vector<pair<int,int>> baht;
+  for(auto mah: ah) aht.push_back(mah.second);
+  for(auto mah: bah) baht.push_back(mah.second);
+  sort(aht.begin(), aht.end());
+  sort(baht.begin(), baht.end());
+  for(int z = 0; z < aht.size(); z++) if(aht[z] != baht[z]) return aht[z] < baht[z];
+  return false;
+}
+
+const bool operator<(const pair<int,vector<vector<i>>>& a, const pair<int,vector<vector<i>>>& b){
+  if(a.first != b.first) return a.first < b.first;
+  return a.second < b.second;
+}
+
 i c(string l){
   for(int j = 0; j < l.size(); j++) if(l[j] == '-') l[j] = ' ';
   stringstream s(l);
   i o;
-  s >> o.e;
   string t;
+  s >> t;
+  o.e = t[3];
   if(s>>t) o.g = false;
   return o;
 }
@@ -73,41 +130,53 @@ bool d(vector<vector<i>> a){
   return a[0].size() == 0 && a[1].size() == 0 && a[2].size() == 0;
 }
 
-int step(vector<vector<i>> g, int o, int x, int& q);
-
-int move(vector<vector<i>> g, int o, m a, int x, int& q){
-  vector<i> aa;
-  for(int y = a.p.size()-1; y >= 0; y--){
-    aa.push_back(g[x][a.p[y]]);
-    g[x].erase(g[x].begin() + a.p[y]);
-  }
-  x += a;
-  if(x > 3 || x < 0) return 10000;
-  for(i y : aa) g[x].push_back(y);
-
-  if(~g) return 10000;
-
-  if(d(g)){
-    q = o;
-    cout << q << endl;
-    return o;
-  }
-
-  return step(g, o, x, q);
+bool done(set<pair<int,vector<vector<i>>>> a){
+  for(auto b : a) if(d(b.second)) return true;
+  return false;
 }
 
-int step(vector<vector<i>> g, int o, int x, int& q){
-  if(o > q) return 10000;
-  vector<int> l;
-  for(int j = 0; j < g[x].size(); j++) for(int z = 0; z < 2; z++) l.push_back(move(g, o+1, m((z==1),{j}),x,q));
-  for(int j = 0; j < g[x].size() - 1; j++){
-    for(int k = j + 1; k < g[x].size(); k++){
-      l.push_back(move(g, o+1, m(true,{j,k}), x, q));
+pair<int,vector<vector<i>>> move(pair<int,vector<vector<i>>> a, m b){
+  vector<i> aa;
+  for(int y = b.p.size() - 1; y >= 0; y--){
+    aa.push_back(a.second[a.first][b.p[y]]);
+    a.second[a.first].erase(a.second[a.first].begin() + b.p[y]);
+  }
+  a.first += b;
+  if(a.first > 3) a.first = 3;
+  if(a.first < 0) a.first = 0;
+  for(i y : aa) a.second[a.first].push_back(y);
+  return a;
+}
+
+set<pair<int,vector<vector<i>>>> step(set<pair<int,vector<vector<i>>>> a, set<pair<int,vector<vector<i>>>>& ooo){
+  set<pair<int,vector<vector<i>>>> o;
+  for(auto b : a){
+    for(int j = 0; j < b.second[b.first].size(); j++){
+      for(int z = 0; z < 2; z++){
+        pair<int,vector<vector<i>>> q = move(b, m((z==1),{j}));
+        if(!ooo.insert(q).second || ~q.second) continue;
+        o.insert(q);
+      }
+    }
+    for(int j = 0; j < b.second[b.first].size()-1; j++){
+      for(int k = j+1; k < b.second[b.first].size(); k++){
+        pair<int,vector<vector<i>>> q = move(b, m(true,{j,k}));
+        if(!ooo.insert(q).second || ~q.second) continue;
+        o.insert(q);
+      }
     }
   }
-  int min = 10000;
-  for(int a : l) if(a < min) min = a;
-  return min;
+  return o;
+}
+
+int go(set<pair<int,vector<vector<i>>>> oooo){
+  set<pair<int,vector<vector<i>>>> ooo;
+  int count = 0;
+  while(!done(oooo) && oooo.size() > 0){
+    oooo = step(oooo,ooo);
+    count++;
+  }
+  return count;
 }
 
 int main(){
@@ -116,11 +185,19 @@ int main(){
   vector<vector<i>> g;
   while(getline(f,l)) g.push_back(p(l));
   
-  int q = 10;
+  set<pair<int,vector<vector<i>>>> oooo;
+  oooo.insert(pair<int,vector<vector<i>>>(0,g));
+  
+  cout << go(oooo) << endl;
 
-  cout << step(g, 0, 0, q) << endl;
+  g[0].push_back(i(true, "elerium"));
+  g[0].push_back(i(false, "elerium"));
+  g[0].push_back(i(true, "dilithium"));
+  g[0].push_back(i(false, "dilithium"));
+  set<pair<int,vector<vector<i>>>> ooooo;
+  ooooo.insert(pair<int,vector<vector<i>>>(0,g));
+
+  cout << go(ooooo) << endl;
 
   return 0;
 }
-
-
